@@ -74,5 +74,6 @@ func TestTimeWheel(t *testing.T) {
 	}
 
 	fmt.Printf("%+v\n", tw)
+	fmt.Println("Size: ", tw.Size())
 	tw.Run()
 }

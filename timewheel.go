@@ -107,6 +107,10 @@ func (tw *TimeWheel) Put(e *Event) error {
 	return nil
 }
 
+func (tw *TimeWheel) Size() int {
+	return tw.eventCnt
+}
+
 // insert 将事件e插入到当前时间轮时间的interval微秒后
 // 使用此方法需要保证获得了locker锁
 func (tw *TimeWheel) insertAfter(interval int, e *Event) int {
