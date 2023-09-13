@@ -64,24 +64,24 @@ func (tw *TimeWheel) handleSlot(index int) error {
 		event := it.Value.(*Event)
 		now := tw.time.unixNano()
 		last := event.lastTime.unixNano()
-		if event.interval == now-last {
-			if event.runSync {
-				event.callback()
+		if event.Interval == now-last {
+			if event.RunSync {
+				event.Callback()
 			} else {
-				go event.callback()
+				go event.Callback()
 			}
 
-			if event.cnt > 0 {
-				event.cnt -= 1
+			if event.Cnt > 0 {
+				event.Cnt -= 1
 			}
-			if event.cnt == 0 {
+			if event.Cnt == 0 {
 				tw.eventCnt -= 1
 			} else {
 				event.lastTime = tw.time
-				tw.insertAfter(event.interval, event)
+				tw.insertAfter(event.Interval, event)
 			}
 		} else {
-			tw.insertAfter(last+event.interval-now, event)
+			tw.insertAfter(last+event.Interval-now, event)
 		}
 	}
 	tw.slots[index].Init() // 重置当前slot
@@ -89,7 +89,7 @@ func (tw *TimeWheel) handleSlot(index int) error {
 }
 
 func (tw *TimeWheel) validate(e *Event) bool {
-	if e.interval < tw.time.step || e.interval%tw.time.step != 0 || e.interval >= tw.maxInterval {
+	if e.Interval < tw.time.step || e.Interval%tw.time.step != 0 || e.Interval >= tw.maxInterval {
 		return false
 	}
 	return true
@@ -103,7 +103,7 @@ func (tw *TimeWheel) Put(e *Event) error {
 	}
 	tw.locker.Lock()
 	defer tw.locker.Unlock()
-	tw.insertAfter(e.interval, e)
+	tw.insertAfter(e.Interval, e)
 	return nil
 }
 

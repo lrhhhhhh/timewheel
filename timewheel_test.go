@@ -61,12 +61,12 @@ func TestTimeWheel(t *testing.T) {
 			continue
 		}
 		err := tw.Put(&Event{
-			id:       id,
-			cnt:      v.cnt,
-			interval: interval,
+			Id:       id,
+			Cnt:      v.cnt,
+			Interval: interval,
 			lastTime: timeinfo{step: step},
-			runSync:  true,
-			callback: func() { helper(id, interval) },
+			RunSync:  true,
+			Callback: func() { helper(id, interval) },
 		})
 		if err != nil {
 			panic(err)
