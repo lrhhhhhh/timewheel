@@ -30,11 +30,12 @@ type TimeWheel struct {
 	dayCnt         int
 
 	ticker      *time.Ticker
-	maxInterval int          // 当前时间轮所能表示的最大的时间，超过这个时间将被取模
-	eventCnt    int          // 时间轮中当前共有多少event
-	time        timeinfo     // 当前时间轮时间
-	slots       []*list.List // from 0 ~ n - 1 : millisecond | second | minute | hour | day
-	locker      *sync.Mutex  // 锁住整个slots
+	maxInterval int                 // 当前时间轮所能表示的最大的时间，超过这个时间将被取模
+	eventCnt    int                 // 时间轮中当前共有多少event
+	eventSet    map[string]struct{} // key=Event.Key
+	time        timeinfo            // 当前时间轮时间
+	slots       []*list.List        // from 0 ~ n - 1 : millisecond | second | minute | hour | day
+	locker      *sync.Mutex         // 锁住整个slots
 }
 
 // Run 主循环
@@ -70,12 +71,12 @@ func (tw *TimeWheel) handleSlot(index int) error {
 			} else {
 				go event.Callback()
 			}
-
 			if event.Cnt > 0 {
 				event.Cnt -= 1
 			}
-			if event.Cnt == 0 {
+			if event.Cnt == 0 { // remove event from timewheel
 				tw.eventCnt -= 1
+				delete(tw.eventSet, event.Key)
 			} else {
 				event.lastTime = tw.time
 				tw.insertAfter(event.Interval, event)
@@ -89,7 +90,9 @@ func (tw *TimeWheel) handleSlot(index int) error {
 }
 
 func (tw *TimeWheel) validate(e *Event) bool {
-	if e.Interval < tw.time.step || e.Interval%tw.time.step != 0 || e.Interval >= tw.maxInterval {
+	if e.Interval < tw.time.step || e.Interval%tw.time.step != 0 ||
+		e.Interval >= tw.maxInterval || e.Cnt == 0 ||
+		e.Key == "" || e.Callback == nil {
 		return false
 	}
 	return true
@@ -104,11 +107,20 @@ func (tw *TimeWheel) Put(e *Event) error {
 	tw.locker.Lock()
 	defer tw.locker.Unlock()
 	tw.insertAfter(e.Interval, e)
+	tw.eventCnt += 1
+	tw.eventSet[e.Key] = struct{}{}
 	return nil
 }
 
 func (tw *TimeWheel) Size() int {
 	return tw.eventCnt
+}
+
+func (tw *TimeWheel) Find(key string) bool {
+	if _, ok := tw.eventSet[key]; ok {
+		return true
+	}
+	return false
 }
 
 // insert 将事件e插入到当前时间轮时间的interval微秒后
@@ -117,7 +129,6 @@ func (tw *TimeWheel) insertAfter(interval int, e *Event) int {
 	future := tw.afterInterval(interval)
 	index := tw.index(future)
 	tw.slots[index].PushBack(e)
-	tw.eventCnt += 1
 	return index
 }
 
@@ -167,6 +178,7 @@ func New(step int) (*TimeWheel, error) {
 		hourCnt:        24,                   // 24个1小时的slot
 		dayCnt:         MaxDay,               // 时间轮最多支持多少天，超过则取模
 		locker:         &sync.Mutex{},
+		eventSet:       make(map[string]struct{}),
 	}
 	total := tw.millisecondCnt + tw.secondCnt + tw.minuteCnt + tw.hourCnt + tw.dayCnt
 	tw.slots = make([]*list.List, total)

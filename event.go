@@ -6,8 +6,8 @@ import (
 )
 
 type Event struct {
-	Id       int //
-	Interval int // 事件每隔interval毫秒运行一次
+	Key      string // unique key
+	Interval int    // 事件每隔interval毫秒运行一次
 
 	// 记录上一次运行的时间信息, 配合时间轮当前时间 和 interval 可以计算出下一次运行的具体时间
 	// 初始化除了step外，全为0 (即不支持interval为0)
@@ -19,5 +19,5 @@ type Event struct {
 }
 
 func (e *Event) String() string {
-	return fmt.Sprintf("Event(id=%d,interval=%s,cnt=%d)", e.Id, time.Duration(e.Interval), e.Cnt)
+	return fmt.Sprintf("Event(key=%s,interval=%s,cnt=%d)", e.Key, time.Duration(e.Interval), e.Cnt)
 }

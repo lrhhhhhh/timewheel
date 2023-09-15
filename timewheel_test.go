@@ -3,6 +3,7 @@ package timewheel
 import (
 	"fmt"
 	_ "net/http/pprof"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -33,13 +34,13 @@ var tc = []testCase{
 
 var g = map[int]int{}
 
-func helper(id, interval int) {
+func helper(key string, interval int) {
 	var d int
 	now := time.Now().UnixNano()
 	if v := g[interval]; v != 0 {
 		d = int(now) - v - interval
 		if d > step { // 判断误差, 如果误差超过step（即一步的长度）则panic
-			fmt.Printf("now=%v, last=%v, delta=%v > step=%v, id=%d\n", now, v, time.Duration(d), step, id)
+			fmt.Printf("now=%v, last=%v, delta=%v > step=%v, key=%s\n", now, v, time.Duration(d), step, key)
 			//panic(interval)
 		}
 	}
@@ -55,18 +56,18 @@ func TestTimeWheel(t *testing.T) {
 	}
 
 	for k, v := range tc {
-		id := k
+		key := strconv.Itoa(k)
 		interval := v.interval
 		if interval < step {
 			continue
 		}
 		err := tw.Put(&Event{
-			Id:       id,
+			Key:      key,
 			Cnt:      v.cnt,
 			Interval: interval,
 			lastTime: timeinfo{step: step},
 			RunSync:  true,
-			Callback: func() { helper(id, interval) },
+			Callback: func() { helper(key, interval) },
 		})
 		if err != nil {
 			panic(err)
