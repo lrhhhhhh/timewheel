@@ -65,7 +65,7 @@ func (tw *TimeWheel) handleSlot(index int) error {
 		event := it.Value.(*Event)
 		now := tw.time.unixNano()
 		last := event.lastTime.unixNano()
-		if event.Interval == now-last {
+		if event.Interval <= now-last {
 			if event.RunSync {
 				event.Callback()
 			} else {
